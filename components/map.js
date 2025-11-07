@@ -4,6 +4,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { GOOGLE_MAPS_API_KEY } from '@env';
+import { useGeocode } from '../hooks/useGeocoding';
 
 export function MapComponent() {
   const insets = useSafeAreaInsets();
@@ -18,39 +19,29 @@ export function MapComponent() {
   const [locationName, setLocationName] = useState('Local atual'); // ✅
   const mapRef = useRef(null);
 
+  const { geocodeAddress } = useGeocode();
+
   const handleSearch = async () => {
     if (!search.trim()) return;
 
-    try {
-      const response = await axios.get(
-        'https://maps.googleapis.com/maps/api/geocode/json',
-        {
-          params: {
-            address: search,
-            key: GOOGLE_MAPS_API_KEY,
-          },
-        }
-      );
+    const result = await geocodeAddress(search);
 
-      const location = response.data.results[0]?.geometry.location;
-
-      if (location) {
-        const newRegion = {
-          latitude: location.lat,
-          longitude: location.lng,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        };
-
-        setRegion(newRegion);
-        setLocationName(response.data.results[0].formatted_address); // ✅
-        mapRef.current.animateToRegion(newRegion, 1000);
-      } else {
-        Alert.alert('Local não encontrado', 'Tente outro nome.');
-      }
-    } catch (error) {
-      Alert.alert('Erro', 'Falha ao buscar localização.');
+    if (!result) {
+      Alert.alert('Local não encontrado', 'Tente outro nome.');
+      return;
     }
+
+    const { location, formattedAddress } = result;
+    const newRegion = {
+      latitude: location.lat,
+      longitude: location.lng,
+      latitudeDelta: 0.05,
+      longitudeDelta: 0.05,
+    };
+
+    setRegion(newRegion);
+    setLocationName(formattedAddress);
+    mapRef.current?.animateToRegion(newRegion, 1000);
   };
 
 
