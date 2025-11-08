@@ -15,6 +15,7 @@ export const useGeocode = () => {
       );
 
       //aguarda e verifica o resultado
+      console.log(response.data);
       const result = response.data.results[0];
       if (!result) return null;
 
